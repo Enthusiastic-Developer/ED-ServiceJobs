@@ -1,12 +1,6 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Data;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TextFileRead.Data;
 
 namespace TextFileRead.Services
@@ -17,23 +11,21 @@ namespace TextFileRead.Services
         private string IncomingAckPath = @"D:\M50\TestDocuments\FESP";
         private readonly string _processedPath = @"D:\M50\TestDocuments\Processed";
         private readonly string _failedProcessedPath = @"D:\M50\TestDocuments\NotProcessed";
-        private string? enforcementType;
-
         private EventDAL eventDal = new EventDAL();
 
-        public List<AckFile> GetReturnAckFiles()
+        public List<AckFile> TXTFileProcess()
         {
             string guid = Guid.NewGuid().ToString();
-            List<AckFile> enflist = new List<AckFile>();
+            List<AckFile> enflist = new();
             try
             {
-                _logger.LogInformation(guid + "Started processing FESP Incoming ack ");
+                _logger.LogInformation(guid + "Started processing TXT File");
                 // Make a reference to a directory.
                 DirectoryInfo di = new DirectoryInfo(IncomingAckPath);
-                _logger.LogInformation(guid + "Started Accessing Directory Incoming ack ");
+                _logger.LogInformation(guid + "Started Accessing Directory");
                 // Get a reference to each directory in that directory.
                 DirectoryInfo[] diArr = di.GetDirectories();
-                _logger.LogInformation(guid + "Started Accessing Directory Incoming ack ");
+                _logger.LogInformation(guid + "Started Getting Directory");
                 foreach (DirectoryInfo dri in diArr)
                 {
                     FileInfo[] files = dri.GetFiles("*.txt");
@@ -44,7 +36,7 @@ namespace TextFileRead.Services
                         {
                             AckFile AckFile = new AckFile();
                             AckFile.DataInFiles = new List<DataInFile>();
-                            _logger.LogInformation(guid + "Started processing FESP Incoming ack file : " + file.DirectoryName + "//" + file.FullName);
+                            _logger.LogInformation(guid + "Started processing Incoming TXT file : " + file.DirectoryName + "//" + file.FullName);
                             using (StreamReader? sr = file.OpenText())
                             {
                                 string enf = string.Empty;
@@ -65,29 +57,26 @@ namespace TextFileRead.Services
                             }
                             AckFile.FileName = file.Name;
                             AckFile.ProcessedDate = DateTime.Now;
-
-                            _logger.LogInformation("InsertEnforcementAckDetails called before with count :  " + AckFile.DataInFiles.Count);
-                            enforcementType = "FESP";
-
-                            BulkInsertEnforcementAckDetails(AckFile.DataInFiles);
+                            BulkInsertTXTDetails(AckFile.DataInFiles);
+                            CreateFolderAndMoveFile(true, dri.FullName, file.Name);
                         }
                         catch (Exception ex)
                         {
-                            CreateFolderAndMoveFile(false, enforcementType!, dri.FullName, file.Name);
-                            _logger.LogError(guid + "Error in processing FESP Incoming ack file : " + file.DirectoryName + "//" + file.FullName + " Error : " + ex.Message);
+                            CreateFolderAndMoveFile(false, dri.FullName, file.Name);
+                            _logger.LogError(guid + "Error in processing Incoming TXT file : " + file.DirectoryName + "//" + file.FullName + " Error : " + ex.Message);
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
-                throw new Exception("Failed processing FESP Incoming ack file" + ex.Message);
+                throw new Exception("Failed processing Incoming TXT file" + ex.Message);
             }
-            _logger.LogInformation(guid + "complete processing FESP Incoming ack file  ");
+            _logger.LogInformation(guid + "complete processing TXT File");
 
             return enflist;
         }
-        public void BulkInsertEnforcementAckDetails(List<DataInFile> lstEnforcementAckFile)
+        public void BulkInsertTXTDetails(List<DataInFile> lstEnforcementAckFile)
         {
             DataTable dt = new DataTable();
             dt.Columns.Add("TextFileName", typeof(string));
@@ -109,9 +98,9 @@ namespace TextFileRead.Services
                 dr["ProcessingStatus"] = data.ProcessingStatus;
                 dt.Rows.Add(dr);
             }
-            eventDal.BulkInsertEnforcementAckDetails(dt);
+            eventDal.BulkInsertTXTDetails(dt);
         }
-        public void CreateFolderAndMoveFile(bool Processed, string enforcementType, string SourceProcessing, string fileName)
+        public void CreateFolderAndMoveFile(bool Processed, string SourceProcessing, string fileName)
         {
             string folderDatePath = DateTime.Today.ToString("yyyy/MM/dd").Replace('-', '/');
             string SourceFilePath = SourceProcessing;
@@ -124,7 +113,7 @@ namespace TextFileRead.Services
                     Directory.CreateDirectory(Path.Combine(ProcessedPath, folderDatePath));
                     _logger.LogInformation("Created Directory for Processed Path : " + Path.Combine(ProcessedPath, folderDatePath));
                 }
-                File.Copy(Path.Combine(SourceFilePath, fileName), Path.Combine(ProcessedPath, folderDatePath, fileName));
+                File.Move(Path.Combine(SourceFilePath, fileName), Path.Combine(ProcessedPath, folderDatePath, fileName));
                 _logger.LogInformation("Moved File from Source File Path to Processed Path : " + Path.Combine(ProcessedPath, folderDatePath));
             }
             else
@@ -134,7 +123,7 @@ namespace TextFileRead.Services
                     Directory.CreateDirectory(Path.Combine(FailedProcessedPath, folderDatePath));
                     _logger.LogInformation("Created Directory for Failed Processed Path : " + Path.Combine(FailedProcessedPath, folderDatePath));
                 }
-                File.Copy(Path.Combine(SourceFilePath, fileName), Path.Combine(FailedProcessedPath, folderDatePath, fileName));
+                File.Move(Path.Combine(SourceFilePath, fileName), Path.Combine(FailedProcessedPath, folderDatePath, fileName));
                 _logger.LogInformation("Moved File from Source File Path to Processed Path : " + Path.Combine(FailedProcessedPath, folderDatePath));
             }
         }

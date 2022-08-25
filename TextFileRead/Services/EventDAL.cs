@@ -1,12 +1,7 @@
 ﻿using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using System;
-using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace TextFileRead.Services
 {
@@ -15,7 +10,7 @@ namespace TextFileRead.Services
         private readonly ILogger _logger = (new NLogLoggerFactory()).CreateLogger<EventDAL>();
         private readonly string _connectionString = @"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog=Test;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Encrypt=False;TrustServerCertificate=False";
 
-        public void BulkInsertEnforcementAckDetails(DataTable dt)
+        public void BulkInsertTXTDetails(DataTable dt)
         {
             _logger.LogInformation("InsertEnforcementAckDetails DAL method calling started " + DateTime.Now.ToString());
             try
