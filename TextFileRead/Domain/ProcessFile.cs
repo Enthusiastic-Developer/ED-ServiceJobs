@@ -1,10 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using NLog.Extensions.Logging;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using TextFileRead.Services;
 
 namespace TextFileRead.Domain
@@ -14,17 +9,17 @@ namespace TextFileRead.Domain
         private readonly ILogger _logger = new NLogLoggerFactory().CreateLogger<ProcessFile>();
         public void TextFileProcess()
         {
-            _logger.LogInformation("Processing file started");
+            _logger.LogInformation("Processing Text file started");
             Helper helper = new Helper();
             try
             {
-                helper.GetReturnAckFiles();
+                helper.TXTFileProcess();
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error processing file");
             }
-            _logger.LogInformation("Processing file ended");
+            _logger.LogInformation("Processing Text file ended");
         }
     }
 }
